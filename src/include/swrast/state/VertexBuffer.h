@@ -21,7 +21,6 @@ namespace swrast {
 
   template<>
   OptRef<VertexBuffer> State::GetObject(ObjectId id);
-
   template<>
   ObjectHandle<VertexBuffer> State::CreateObject(VertexBuffer&& vbo);
 } // namespace swrast

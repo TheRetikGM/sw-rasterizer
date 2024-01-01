@@ -41,7 +41,7 @@ Framebuffer::Framebuffer(glm::uvec2 size, FramebufferSpec spec)
 
 Framebuffer Framebuffer::CreateBasic(glm::uvec2 size) {
   return Framebuffer(size, {
-    .depth_buffer = State::CreateObject(Texture({}, size, TexFormat::r)),
+    .depth_buffer = State::CreateObject(Texture({}, size, TexFormat::rgba)),  // 32 bits precision of depth.
     .color_atts = { State::CreateObject(Texture({}, size, TexFormat::rgba)) },
   });
 }
@@ -69,5 +69,22 @@ Framebuffer& Framebuffer::Use() {
 const Framebuffer& Framebuffer::Use() const {
   State::SetActiveFramebuffer(this->Id);
   return *this;
+}
+
+Framebuffer& Framebuffer::Clear(Opt<Color> color, bool depth) {
+  if (color.has_value()) {
+    for (auto& ca : m_colorAtts)
+      ca->Fill(color.value());
+  }
+  if (depth && m_depthBuffer.has_value()) {
+    m_depthBuffer.value()->Fill(glm::vec4(1.0f));
+  }
+  return *this;
+}
+
+Opt<ObjectHandle<Texture>> Framebuffer::GetColorAttach(uint32_t index) const {
+  if (index >= m_colorAtts.size())
+    return {};
+  return m_colorAtts[index];
 }
 

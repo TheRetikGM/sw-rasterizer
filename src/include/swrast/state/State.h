@@ -9,8 +9,9 @@
 #include <glm/glm.hpp>
 #include <optional>
 #include <unordered_map>
-#include "error.hpp"
+#include <any>
 #include "swrast_private.h"
+#include "memory.hpp"
 
 
 namespace swrast {
@@ -20,6 +21,13 @@ namespace swrast {
   class VertexArray;
   class Texture;
   class Framebuffer;
+  class Shader;
+  class Program;
+  enum class Primitive : uint8_t;
+
+  enum class CullFace {
+    None, CW, CCW
+  };
 
   /**
    * @brief Main rasterizer state.
@@ -32,13 +40,64 @@ namespace swrast {
     static std::unordered_map<ObjectId, VertexArray> m_vaos;
     static std::unordered_map<ObjectId, Texture> m_textures;
     static std::unordered_map<ObjectId, Framebuffer> m_fbos;
+    static std::unordered_map<ObjectId, Ref<Shader>> m_shaders;
+    static std::unordered_map<ObjectId, Program> m_programs;
     static ObjectId m_activeFb;
     static ObjectId m_defaultFb;
+    static Opt<ObjectId> m_activeProgram;
+    static Opt<ObjectId> m_activeVao;
+    static CullFace m_cullFace;
+    inline static bool m_depthTest = false;
+
+    friend class RenderState;
 
   public:
 
+    /**
+     * @brief Initialize the state.
+     * @param fb_size Dimensions of the default framebuffer.
+     */
     static void Init(glm::uvec2 fb_size);
+
+    /// Destroy the state and all its allocated resources.
     static void Destroy();
+
+    /// Enable/disable depth testing.
+    static void SetDepthTest(bool b) { m_depthTest = b; }
+
+    static ObjectHandle<Framebuffer> GetActiveFramebuffer();
+
+    /**
+     * @brief Clear the active framebuffer with given color.
+     * @param color Color to clear the fb with.
+     * @param depth If the depth buffer should be cleared too.
+     */
+    static void Clear(Opt<Color> color, bool depth = true);
+    /**
+     * @brief Draw unindexed
+     * @param primitive Primitives to draw
+     * @param offset Offset into the VBO's
+     * @param count Number of vertices to be rendered.
+     */
+    static void DrawArrays(Primitive primitive, size_t offset, size_t count);
+    /**
+     * @brief Draw indexed
+     * @param primitive PRimitives to draw
+     * @param count Number of indices to use.
+     */
+    static void DrawIndexed(Primitive primitive, size_t count);
+
+    /**
+     * @brief Set how the faces should be culled.
+     * @param cull Culling method to use.
+     */
+    inline static void SetCullFace(CullFace cull) { m_cullFace = cull; }
+
+    /**
+     * @brief Set the cufrent active program.
+     * @param prg_id Id of the program to set.
+     */
+    static void SetActiveProgram(ObjectId prg_id);
 
     /**
      * @brief Use given framebuffer for rendering.
@@ -46,6 +105,12 @@ namespace swrast {
      * @except ObjectNotFoundException on invalid `id`.
      */
     static void SetActiveFramebuffer(Opt<ObjectId> fb_id = {});
+
+    /**
+     * @brief Use given vertex array.
+     * @param vao_id Id of the vao to use. If none, then current VAO is unbound.
+     */
+    static void SetActiveVertexArray(Opt<ObjectId> vao_id);
 
     /**
      * @brief Get reference to given object.
@@ -85,11 +150,6 @@ namespace swrast {
      * @except ObjectNotFoundException on invalid object id.
      * @return Handle of referencing given object.
      */
-    static ObjectHandle<T> FromId(ObjectId obj_id) {
-      auto obj = State::GetObject<T>(obj_id);
-      if (!obj.has_value())
-        RAISE(ObjectNotFoundException, obj_id);
-      return { obj.value(), obj_id };
-    }
+    static ObjectHandle<T> FromId(ObjectId obj_id);
   };
 } // namespace swrast

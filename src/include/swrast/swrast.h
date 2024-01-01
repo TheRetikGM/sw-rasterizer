@@ -10,4 +10,6 @@
 #include "state/IndexBuffer.h"
 #include "state/Texture.h"
 #include "state/Framebuffer.h"
+#include "state/Program.h"
+#include "state/ObjectHandleFromId.hpp"
 

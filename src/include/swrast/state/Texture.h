@@ -20,6 +20,8 @@ namespace swrast {
     rgba = 4, ///< 4 color channels
   };
 
+  int channel_count(TexFormat f);
+
   /// Method to use when scaling.
   enum class ScaleMethod : uint8_t {
     Linear,   ///< Scale using linear interpolation.
@@ -48,6 +50,12 @@ namespace swrast {
   /// Represents a single texture object.
   class Texture : public UniqueId<Texture> {
   public:
+    TexFormat m_IntFormat;
+    ScaleMethod m_MagFilter;
+    ScaleMethod m_MinFilter;
+    WrapMethod m_WrapS;
+    WrapMethod m_WrapT;
+
     Texture(
         std::optional<TextureData> tex_data,
         glm::uvec2 tex_size,
@@ -56,23 +64,31 @@ namespace swrast {
     );
     Texture() = default;
 
-    inline void SetMagFilter(ScaleMethod m) { m_magFilter = m; }
-    inline void SetMinFilter(ScaleMethod m) { m_minFilter = m; }
-    inline void SetWrapS(WrapMethod w) { m_wrapS = w; }
-    inline void SetWrapT(WrapMethod w) { m_wrapT = w; }
+    inline void SetMagFilter(ScaleMethod m) { m_MagFilter = m; }
+    inline void SetMinFilter(ScaleMethod m) { m_MinFilter = m; }
+    inline void SetWrapS(WrapMethod w) { m_WrapS = w; }
+    inline void SetWrapT(WrapMethod w) { m_WrapT = w; }
 
     inline const glm::uvec2& GetSize() const noexcept { return m_size; }
 
-    // TODO: Add some kind of sample method?
+    /**
+     * @brief Fill the texture with given color.
+     * @param Color to fill the texture with.
+     * @note Only the relevant components are taken from the color (according to internal format
+     */
+    void Fill(glm::vec4 color);
+
+    /**
+     * @brief Get pointer to pixel at given position
+     *
+     * @param pos Position of the pixel to get.
+     * @return Pointer to the pixel or nullptr on error.
+     */
+    uint8_t* GetPixel(glm::uvec2 pos);
 
   private:
     TextureData m_tex;
     glm::uvec2 m_size;
-    TexFormat m_intFormat;
-    ScaleMethod m_magFilter;
-    ScaleMethod m_minFilter;
-    WrapMethod m_wrapS;
-    WrapMethod m_wrapT;
   };
 
   template<>

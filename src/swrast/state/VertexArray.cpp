@@ -5,19 +5,26 @@
  *
  */
 #include "state/VertexArray.h"
-#include "error.hpp"
 
 using namespace swrast;
 
+uint32_t swrast::get_byte_size(AttributeType type) {
+  static uint32_t sizes[] = { 4, 4, 8, 8, 12, 12, 16, 16, 36, 64 };
+  return sizes[uint8_t(type)];
+}
+
 VertexArray::VertexArray(const std::vector<VertexAttribute>&& attributes,
                          std::optional<ObjectHandle<IndexBuffer>> index_buffer)
-    : m_indexBuffer(index_buffer), m_attribs(attributes) {}
+    : m_indexBuffer(index_buffer), m_attribs(attributes) {
+}
 
 void VertexArray::AddAttribute(const VertexAttribute &attr) {
   m_attribs.push_back(attr);
 }
 
-void VertexArray::Use() { RAISEn(NotImplementedException); }
+void VertexArray::Use() {
+  State::SetActiveVertexArray(Id);
+}
 
 template<>
 OptRef<VertexArray> State::GetObject(ObjectId id) {

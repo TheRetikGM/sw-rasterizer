@@ -12,7 +12,7 @@
 namespace swrast {
   class IndexBuffer : public UniqueId<IndexBuffer> {
   public:
-    using Data = std::vector<int>;
+    using Data = std::vector<uint32_t>;
     Data data;
 
     IndexBuffer(const Data&& data) : data(data) {}
