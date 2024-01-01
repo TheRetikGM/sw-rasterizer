@@ -100,7 +100,6 @@ void process_pixel(RenderPrimitive* prim, glm::vec4& pix_pos) {
 }
 
 void process_primitive(RenderPrimitive* prim) {
-  TrianglePrimitive* p = dynamic_cast<TrianglePrimitive*>(prim);
   prim->Clip([](RenderPrimitive* prim) {
     prim->PerpDiv();
     prim->NdcTransform();
