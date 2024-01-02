@@ -1,0 +1,7 @@
+[wrap-git]
+url = https://github.com/theretikgm/imwidgets.git
+revision = head
+depth = 1
+
+[provide]
+imwidgets = imwidgets_dep

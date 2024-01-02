@@ -6,6 +6,7 @@ project('PGR project - SW rasterizer', 'cpp',
 proj_deps = [
   dependency('imguiwrapper', default_options : []),
   dependency('ren_utils'),
+  dependency('imwidgets'),
 ]
 
 proj_name = 'main'

@@ -3,3 +3,4 @@ builddir/
 build/
 subprojects/*
 !subprojects/*.wrap
+compile_commands.json

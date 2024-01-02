@@ -20,7 +20,7 @@ namespace swrast {
     Exception(const char* file, int line)
       : m_file(file)
       , m_line(line)
-      , m_msg(format("%s:%i: ", file, line)) {}
+      , m_msg(strfmt("%s:%i: ", file, line)) {}
 
     virtual const char* what() const noexcept { return m_msg.c_str(); }
   };
@@ -38,7 +38,7 @@ namespace swrast {
 
   struct ObjectNotFoundException : public Exception {
     ObjectNotFoundException(const char* file, int line, ObjectId id) : Exception(file, line) {
-      m_msg += format("Object with ID = %i could not be found.", id);
+      m_msg += strfmt("Object with ID = %i could not be found.", id);
     }
   };
 } // namespace swrast

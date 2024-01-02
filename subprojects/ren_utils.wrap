@@ -1,6 +1,6 @@
 [wrap-git]
 url = https://github.com/theretikgm/ren-utils.git
-revision = head
+revision = c4084b3368019fa20be55472fd7b42b07ef3e526
 depth = 1
 
 [provide]

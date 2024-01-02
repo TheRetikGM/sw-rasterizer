@@ -1,9 +1,12 @@
+#include "ren_utils/AvgSampler.hpp"
+#include "ren_utils/RingBuffer.hpp"
 #include "render/render.h"
 #include <glm/ext/matrix_clip_space.hpp>
 #include <imguiwrapper.hpp> // Requires C++20
 #include <iostream>
 #include <swrast.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <imwidgets/imwidgets.h>
 
 using namespace swrast;
 
@@ -14,6 +17,8 @@ void print_vec(const char* name, const glm::vec2 vec) {
   printf("%s = [%f, %f]\n", name, vec.x, vec.y);
 };
 
+using namespace ImWidgets;
+
 
 struct MainProgram {
   ObjectHandle<VertexArray> vao;
@@ -21,8 +26,18 @@ struct MainProgram {
   ObjectHandle<Program> prg;
   glm::uvec2 vp_size = { 400, 400 };
 
+  // Gui utilitities
+  float dt = 0.0f;    // Last delta time
+  GuiLogger* logger;
+  ren_utils::AvgSampler<float> fps_sampler = ren_utils::AvgSampler<float>(144, [this]{ return 1.0f / dt; }, ren_utils::SampleMode::CONTINUOUS);
+  FpsPlot<float> fps_plot = FpsPlot<float>(fps_sampler);
+
   // GPU texture used for drawing the resulting image in ImGui window.
   GLuint fb_texture;
+
+  MainProgram() {
+    logger = ren_utils::LogEmitter::AddListener<GuiLogger>(100, true);
+  }
 
   void OnCreate() {
     State::Init(vp_size);
@@ -75,9 +90,6 @@ struct MainProgram {
       .fragment_shader = State::CreateObject(FragmentShader(fs_func)),
     }));
 
-    State::SetDepthTest(true);
-    State::SetCullFace(CullFace::None);
-
     // Init opengl gpu texture used for imgui image drawing.
     glGenTextures(1, &fb_texture);
     glBindTexture(GL_TEXTURE_2D, fb_texture);
@@ -90,8 +102,36 @@ struct MainProgram {
     State::Destroy();
   }
 
-  void OnUpdate(float) {
+  void DrawGui() {
+    logger->Draw();
+    ImGui::Begin("Control panel");
+    ImGui::SeparatorText("Info");
+    fps_plot.DrawPlot();
+    ImGui::SeparatorText("Controls");
+    static bool depth_test = true;
+    if (ImGui::Checkbox("Depth test", &depth_test))
+      LOG_S(strfmt("Depth test: %s", depth_test ? "on" : "off"));
+    State::SetDepthTest(depth_test);
+    static bool culling = false;
+    static int cull_face_current = 2;
+    if (ImGui::Checkbox("Culling", &culling))
+        LOG_S(strfmt("Cull face: %s", culling ? (cull_face_current == 1 ? "CW" : "CCW") : "None"));
+    if (!culling)
+      State::SetCullFace(CullFace::None);
+    else {
+      ImGui::Indent();
+      if (ImGui::SliderInt("Method", &cull_face_current, 1, 2, cull_face_current == 1 ? "Clockwise" : "Counter clockwise"))
+        LOG_S(strfmt("Cull face: %s", cull_face_current == 1 ? "CW" : "CCW"));
+      State::SetCullFace(CullFace(cull_face_current));
+      ImGui::Unindent();
+    }
+    ImGui::End();
+  }
+
+  void OnUpdate(float dt) {
+    this->dt = dt;
     ImGui::DockSpaceOverViewport();
+    fps_sampler.Sample();
 
     // Transform
     glm::mat4 model(1.0f);

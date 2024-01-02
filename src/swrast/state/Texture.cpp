@@ -18,7 +18,7 @@ int swrast::channel_count(TexFormat f) {
   case TexFormat::rgb: return 3;
   case TexFormat::rgba: return 4;
   }
-  throw std::invalid_argument(format("channel_count: Invalid TexFormat (with value '%i').", int(f)));
+  throw std::invalid_argument(strfmt("channel_count: Invalid TexFormat (with value '%i').", int(f)));
 }
 
 Texture::Texture(
