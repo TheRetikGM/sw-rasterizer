@@ -1,6 +1,6 @@
 #include "ren_utils/AvgSampler.hpp"
-#include "ren_utils/RingBuffer.hpp"
 #include "render/render.h"
+#include "camera.h"
 #include <glm/ext/matrix_clip_space.hpp>
 #include <imguiwrapper.hpp> // Requires C++20
 #include <iostream>
@@ -9,16 +9,23 @@
 #include <imwidgets/imwidgets.h>
 
 using namespace swrast;
-
-void print_vec(const char* name, const glm::vec3 vec) {
-  printf("%s = [%f, %f, %f]\n", name, vec.x, vec.y, vec.z);
-};
-void print_vec(const char* name, const glm::vec2 vec) {
-  printf("%s = [%f, %f]\n", name, vec.x, vec.y);
-};
-
 using namespace ImWidgets;
 
+void vertex_shader(VertexShader* vs) {
+  auto aPos = vs->Attribute<glm::vec3>(0).value().get();
+  auto aColor = vs->Attribute<glm::vec3>(1).value().get();
+  auto& color = vs->Out<glm::vec3>("color");
+  auto mvp = vs->Uniform<glm::mat4>("mvp").value().get();
+
+  color = aColor;
+  vs->m_Position = mvp * glm::vec4(aPos, 1.0f);
+}
+
+void fragment_shader(FragmentShader* fs) {
+  auto color = fs->In<glm::vec3>("color");
+
+  fs->m_FragColor = glm::vec4(color, 1.0f);
+}
 
 struct MainProgram {
   ObjectHandle<VertexArray> vao;
@@ -35,7 +42,10 @@ struct MainProgram {
   // GPU texture used for drawing the resulting image in ImGui window.
   GLuint fb_texture;
 
-  MainProgram() {
+  Camera camera{};
+  GLFWwindow* window;
+
+  MainProgram(GLFWwindow* glfw_window) : window(glfw_window) {
     logger = ren_utils::LogEmitter::AddListener<GuiLogger>(100, true);
   }
 
@@ -67,27 +77,9 @@ struct MainProgram {
     }, ibo));
     fb = State::CreateObject(Framebuffer::CreateBasic(vp_size));
 
-    /// Vertex shader ///
-    auto vs_func = [](VertexShader* vs) {
-      // Vertex attributes
-      auto aPos = vs->Attribute<glm::vec3>(0).value().get();
-      auto aColor = vs->Attribute<glm::vec3>(1).value().get();
-      // Uniforms
-      auto mvp = vs->Uniform<glm::mat4>("mvp").value().get();
-      // Computation
-      vs->Out<glm::vec3>("color") = aColor;
-      vs->m_Position = mvp * glm::vec4(aPos, 1.0f);
-    };
-
-    /// Fragment shader ///
-    auto fs_func = [](FragmentShader* fs) {
-      auto color = fs->In<glm::vec3>("color");
-      fs->m_FragColor = glm::vec4(color, 1.0f);
-    };
-
     prg = State::CreateObject(Program({
-      .vertex_shader = State::CreateObject(VertexShader(vs_func)),
-      .fragment_shader = State::CreateObject(FragmentShader(fs_func)),
+      .vertex_shader = State::CreateObject(VertexShader(vertex_shader)),
+      .fragment_shader = State::CreateObject(FragmentShader(fragment_shader)),
     }));
 
     // Init opengl gpu texture used for imgui image drawing.
@@ -129,21 +121,28 @@ struct MainProgram {
   }
 
   void OnUpdate(float dt) {
+    static bool capture_input = false;
+    if (ImGui::IsKeyPressed(ImGuiKey_F2, false)) {
+      capture_input = !capture_input;
+      glfwSetInputMode(window, GLFW_CURSOR, capture_input ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+      LOG_S(strfmt("Capture input: %s", capture_input ? "yes" : "no"));
+    }
+    if (capture_input)
+      camera.Update(dt);
+
     this->dt = dt;
     ImGui::DockSpaceOverViewport();
     fps_sampler.Sample();
+    DrawGui();
 
     // Transform
     glm::mat4 model(1.0f);
     model = glm::rotate(model, (float)ImGui::GetTime(), glm::vec3( 0.8f, 0.5f, 0.1f ));
     // model = glm::rotate(model, (float)glm::radians(45.0f), glm::vec3( 0.8f, 0.5f, 0.1f ));
     model = glm::scale(model, glm::vec3(1.0f));
-    // Projection
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 20.0f);
-    // View
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f });
-    // MVP matrix
-    glm::mat4 mvp = projection * view * model;
+    // glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f });
+    glm::mat4 mvp = projection * camera.m_ViewMatrix * model;
 
     fb->Use();
     State::Clear(Colors::Gray);
@@ -175,8 +174,8 @@ int main() {
   def.imgui_theme = ImWrap::ImGuiTheme::dark;
 
   try {
-    MainProgram prg;
     auto context = ImWrap::Context::Create(def);
+    MainProgram prg(context->m_Window);
     ImWrap::run(context, prg);
     ImWrap::Context::Destroy(context);
   } catch (const swrast::Exception& e) {

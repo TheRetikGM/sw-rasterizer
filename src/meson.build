@@ -4,6 +4,7 @@ proj_inc = include_directories(
 
 proj_src = files(
   'main.cpp',
+  'camera.cpp'
 )
 
 subdir('swrast')
