@@ -45,6 +45,9 @@ struct MainProgram {
   Camera camera{};
   GLFWwindow* window;
 
+  // UI variables
+  bool rotate_cube = false;
+
   MainProgram(GLFWwindow* glfw_window) : window(glfw_window) {
     logger = ren_utils::LogEmitter::AddListener<GuiLogger>(100, true);
   }
@@ -117,6 +120,8 @@ struct MainProgram {
       State::SetCullFace(CullFace(cull_face_current));
       ImGui::Unindent();
     }
+    ImGui::Separator();
+    ImGui::Checkbox("Rotate cube", &rotate_cube);
     ImGui::End();
   }
 
@@ -137,7 +142,11 @@ struct MainProgram {
 
     // Transform
     glm::mat4 model(1.0f);
-    model = glm::rotate(model, (float)ImGui::GetTime(), glm::vec3( 0.8f, 0.5f, 0.1f ));
+    if (rotate_cube)
+      model = glm::rotate(model, (float)ImGui::GetTime(), glm::vec3( 0.8f, 0.5f, 0.1f ));
+    else {
+      model = glm::rotate(model, glm::radians(50.0f), glm::vec3( 0.8f, 0.5f, 0.1f ));
+    }
     // model = glm::rotate(model, (float)glm::radians(45.0f), glm::vec3( 0.8f, 0.5f, 0.1f ));
     model = glm::scale(model, glm::vec3(1.0f));
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 20.0f);

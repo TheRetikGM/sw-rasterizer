@@ -6,6 +6,8 @@
 #include "render/RenderPrimitive.h"
 #include "state/Framebuffer.h"
 #include "state/Program.h"
+#include <immintrin.h> // SIMD instructions
+#include <glm/gtc/type_ptr.hpp>
 
 using namespace swrast;
 
@@ -167,6 +169,23 @@ void TrianglePrimitive::Rasterize(const FragFunc& func) {
   }
 }
 
+inline glm::vec4 simd_interp(const glm::vec4& a, const glm::vec4& b, const glm::vec4& c, const glm::vec3& p) {
+  __m128 va = _mm_loadu_ps(glm::value_ptr(a));
+  __m128 vb = _mm_loadu_ps(glm::value_ptr(b));
+  __m128 vc = _mm_loadu_ps(glm::value_ptr(c));
+
+  __m128 vpx = _mm_set_ps(p.x, p.x, p.x, p.x);
+  __m128 vpy = _mm_set_ps(p.y, p.y, p.y, p.y);
+  __m128 vpz = _mm_set_ps(p.z, p.z, p.z, p.z);
+
+  __m128 result = _mm_add_ps(_mm_add_ps(_mm_mul_ps(vpx, va), _mm_mul_ps(vpy, vb)), _mm_mul_ps(vpz, vc));
+
+  glm::vec4 v_result;
+  _mm_storeu_ps(glm::value_ptr(v_result), result);
+
+  return v_result;
+}
+
 void TrianglePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars) {
   // Vectors from the fragment to all vertices of primitive.
   glm::vec2 fa = glm::vec2(a) - glm::vec2(pos);
@@ -181,15 +200,19 @@ void TrianglePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars) {
   float lb = get_volume(fa, fc) * m_invArea;
   float lc = get_volume(fb, fa) * m_invArea;
 
-  // Interpolate attributes
-  float s =  la / a.w + lb / b.w + lc / c.w;
   /// Perspectively Correct Lambdas
+  float s =  la / a.w + lb / b.w + lc / c.w;
   glm::vec3 pcl = { la / (a.w * s), lb / (b.w * s), lc / (c.w * s) };
-  for (auto& [name, val] : a_attr) {
-    if (val.integer)
-      vars[name].i4 = a_attr[name].i4;
+
+  // Interpolate attributes
+  auto ait = a_attr.begin();
+  auto bit = b_attr.begin();
+  auto cit = c_attr.begin();
+  for (; ait != a_attr.end(); ait++, bit++, cit++) {
+    if (ait->second.integer)
+      vars[ait->first].i4 = ait->second.i4;
     else
-      vars[name].f4 = pcl.x * a_attr[name].f4 + pcl.y * b_attr[name].f4 + pcl.z * c_attr[name].f4;
+      vars[ait->first].f4 = simd_interp(ait->second.f4, bit->second.f4, cit->second.f4, pcl);
   }
 
   // Interpolate depth.
