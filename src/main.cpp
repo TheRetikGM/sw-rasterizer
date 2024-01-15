@@ -22,7 +22,7 @@ void vertex_shader(VertexShader* vs) {
 }
 
 void fragment_shader(FragmentShader* fs) {
-  auto color = fs->In<glm::vec3>("color"_sid);
+  auto& color = fs->In<glm::vec3>("color"_sid);
 
   fs->m_FragColor = glm::vec4(color, 1.0f);
 }
@@ -147,7 +147,6 @@ struct MainProgram {
     else {
       model = glm::rotate(model, glm::radians(50.0f), glm::vec3( 0.8f, 0.5f, 0.1f ));
     }
-    // model = glm::rotate(model, (float)glm::radians(45.0f), glm::vec3( 0.8f, 0.5f, 0.1f ));
     model = glm::scale(model, glm::vec3(1.0f));
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 20.0f);
     // glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f });

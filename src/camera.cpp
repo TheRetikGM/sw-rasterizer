@@ -32,17 +32,17 @@ void Camera::handleInput(float dt) {
   glm::vec3 move_dir(0.0f);
 
   if (ImGui::IsKeyDown(ImGuiKey_W))
-    move_dir = glm::vec3(m_front.x, 0.0f, m_front.z);
+    move_dir += glm::vec3(m_front.x, 0.0f, m_front.z);
   if (ImGui::IsKeyDown(ImGuiKey_A))
-    move_dir = -right;
+    move_dir += -right;
   if (ImGui::IsKeyDown(ImGuiKey_S))
-    move_dir = -glm::vec3(m_front.x, 0.0f, m_front.z);
+    move_dir += -glm::vec3(m_front.x, 0.0f, m_front.z);
   if (ImGui::IsKeyDown(ImGuiKey_D))
-    move_dir = right;
+    move_dir += right;
   if (ImGui::IsKeyDown(ImGuiKey_LeftShift))
-    move_dir = -UP;
+    move_dir += -UP;
   if (ImGui::IsKeyDown(ImGuiKey_Space))
-    move_dir = UP;
+    move_dir += UP;
 
   if (move_dir != glm::vec3(0.0f)) {
     move_dir = glm::normalize(move_dir);
