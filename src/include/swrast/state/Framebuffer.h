@@ -1,6 +1,6 @@
 /**
- * @brief Framebuffer declarations
  * @file state/Framebuffer.h
+ * @brief Framebuffer declarations
  * @author Jakub Kloub, xkloub03, VUT FIT
  */
 #pragma once

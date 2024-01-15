@@ -1,7 +1,7 @@
 /**
+ * @file state/IndexBuffer.h
  * @brief This file contains declaration of index buffer.
  * @author Jakub Kloub, xkloub03, VUT  FIT
- * @file IndexBuffer.h
  */
 #pragma once
 #include <glm/glm.hpp>

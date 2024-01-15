@@ -125,7 +125,7 @@ bool TrianglePrimitive::Cull() {
 
 // Implementation of Pineda's rasterization algorithm.
 void TrianglePrimitive::Rasterize(const FragFunc& func) {
-    /* Rasterize primitive using Pineda's rasterization algorithm. */
+  /* Rasterize primitive using Pineda's rasterization algorithm. */
   glm::vec2 v[] = {
     glm::vec2(a),
     glm::vec2(b),
@@ -182,7 +182,7 @@ void TrianglePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars) {
   float lc = get_volume(fb, fa) * m_invArea;
 
   // Interpolate attributes
-  float s = la / a.w + lb / a.w + lc / a.w;
+  float s =  la / a.w + lb / b.w + lc / c.w;
   /// Perspectively Correct Lambdas
   glm::vec3 pcl = { la / (a.w * s), lb / (b.w * s), lc / (c.w * s) };
   for (auto& [name, val] : a_attr) {

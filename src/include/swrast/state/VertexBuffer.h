@@ -1,7 +1,7 @@
 /**
  * @file state/VertexBuffer.h
- * @author Jakub Kloub, xkloub03, VUT FIT
  * @brief This file contains a vertex buffer declarations.
+ * @author Jakub Kloub, xkloub03, VUT FIT
  */
 #pragma once
 #include <glm/glm.hpp>

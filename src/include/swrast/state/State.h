@@ -1,5 +1,5 @@
 /**
- * @file State.h
+ * @file state/State.h
  * @brief Main rasterizer state.
  * @author Jakub Kloub, xkloub03, VUT FIT
  */
@@ -65,6 +65,7 @@ namespace swrast {
     /// Enable/disable depth testing.
     static void SetDepthTest(bool b) { m_depthTest = b; }
 
+    /// Get the currently bound framebuffer.
     static ObjectHandle<Framebuffer> GetActiveFramebuffer();
 
     /**

@@ -1,7 +1,7 @@
 /**
+ * @file state/TextureObject.h
  * @brief This file contains declaration of texture object.
  * @author Jakub Kloub, xkloub03, VUT FIT
- * @file state/TextureObject.h
  */
 #pragma once
 #include "state/State.h"

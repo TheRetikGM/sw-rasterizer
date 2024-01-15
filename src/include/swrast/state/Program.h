@@ -1,7 +1,7 @@
 /**
+ * @file state/Program.h
  * @brief This file contains the declaration of programs
  * @author Jakub Kloub, xklobu03, VUT FIT
- * @file state/Program.h
  */
 #pragma once
 #include "error.hpp"

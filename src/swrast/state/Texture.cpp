@@ -53,22 +53,18 @@ Texture::Texture(
 }
 
 void Texture::Fill(glm::vec4 c) {
-  auto pixel_count = m_size.x * m_size.y;
   auto channels = channel_count(m_IntFormat);
   assert(channels == 1 || channels == 3 || channels == 4);
   auto color = glm::vec<4, uint8_t>(c.r * 255, c.g * 255, c.b * 255, c.a * 255);
 
   if (channels == 1) {
     std::fill(m_tex.begin(), m_tex.end(), color.r);
-    return;
-  }
-
-  for (uint32_t i = 0; i < pixel_count * channels; i += channels) {
-    m_tex[i] = color.r;
-    m_tex[i + 1] = color.g;
-    m_tex[i + 2] = color.b;
-    if (channels == 4)
-      m_tex[i + 3] = color.a;
+  } else if (channels == 3) {
+    auto p = reinterpret_cast<std::vector<glm::vec<3, uint8_t>>*>(&m_tex);
+    std::fill(p->begin(), p->end(), static_cast<glm::vec<3, uint8_t>>(color));
+  } else {
+    auto p = reinterpret_cast<std::vector<glm::vec<4, uint8_t>>*>(&m_tex);
+    std::fill(p->begin(), p->end(), static_cast<glm::vec<4, uint8_t>>(color));
   }
 }
 

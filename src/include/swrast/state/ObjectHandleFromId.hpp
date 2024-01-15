@@ -1,7 +1,7 @@
 /**
  * @file state/ObjectHandleFromId.hpp
- * @author Jakub Kloub, xklobu03, VUT FIT
  * @brief This file contains ObjectHandle implementation.
+ * @author Jakub Kloub, xklobu03, VUT FIT
  */
 #pragma once
 #include "Framebuffer.h"
