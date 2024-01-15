@@ -14,15 +14,15 @@ using namespace ImWidgets;
 void vertex_shader(VertexShader* vs) {
   auto aPos = vs->Attribute<glm::vec3>(0).value().get();
   auto aColor = vs->Attribute<glm::vec3>(1).value().get();
-  auto& color = vs->Out<glm::vec3>("color");
-  auto mvp = vs->Uniform<glm::mat4>("mvp").value().get();
+  auto& color = vs->Out<glm::vec3>("color"_sid);
+  auto mvp = vs->Uniform<glm::mat4>("mvp"_sid).value().get();
 
   color = aColor;
   vs->m_Position = mvp * glm::vec4(aPos, 1.0f);
 }
 
 void fragment_shader(FragmentShader* fs) {
-  auto color = fs->In<glm::vec3>("color");
+  auto color = fs->In<glm::vec3>("color"_sid);
 
   fs->m_FragColor = glm::vec4(color, 1.0f);
 }
@@ -147,7 +147,7 @@ struct MainProgram {
     fb->Use();
     State::Clear(Colors::Gray);
     prg->Use();
-    prg->SetUniform("mvp", mvp);
+    prg->SetUniform("mvp"_sid, mvp);
     vao->Use();
     State::DrawIndexed(Primitive::Triangles, vao->GetIndexBuffer()->data.size());
 

@@ -60,42 +60,42 @@ template<> ObjectHandle<Program> State::CreateObject(Program&& obj) {
   };
 }
 
-template<> int32_t& Shader::getInOut(Shader::InOutVars* vars, const char* name) {
+template<> int32_t& Shader::getInOut(Shader::InOutVars* vars, StrId name) {
   auto& v = (*vars)[name];
   v.integer = true;
   return v.i1;
 }
-template<> glm::ivec2& Shader::getInOut(Shader::InOutVars* vars, const char* name) {
+template<> glm::ivec2& Shader::getInOut(Shader::InOutVars* vars, StrId name) {
   auto& v = (*vars)[name];
   v.integer = true;
   return v.i2;
 }
-template<> glm::ivec3& Shader::getInOut(Shader::InOutVars* vars, const char* name) {
+template<> glm::ivec3& Shader::getInOut(Shader::InOutVars* vars, StrId name) {
   auto& v = (*vars)[name];
   v.integer = true;
   return v.i3;
 }
-template<> glm::ivec4& Shader::getInOut(Shader::InOutVars* vars, const char* name) {
+template<> glm::ivec4& Shader::getInOut(Shader::InOutVars* vars, StrId name) {
   auto& v = (*vars)[name];
   v.integer = true;
   return v.i4;
 }
-template<> float& Shader::getInOut(Shader::InOutVars* vars, const char* name) {
+template<> float& Shader::getInOut(Shader::InOutVars* vars, StrId name) {
   auto& v = (*vars)[name];
   v.integer = false;
   return v.f1;
 }
-template<> glm::vec2& Shader::getInOut(Shader::InOutVars* vars, const char* name) {
+template<> glm::vec2& Shader::getInOut(Shader::InOutVars* vars, StrId name) {
   auto& v = (*vars)[name];
   v.integer = false;
   return v.f2;
 }
-template<> glm::vec3& Shader::getInOut(Shader::InOutVars* vars, const char* name) {
+template<> glm::vec3& Shader::getInOut(Shader::InOutVars* vars, StrId name) {
   auto& v = (*vars)[name];
   v.integer = false;
   return v.f3;
 }
-template<> glm::vec4& Shader::getInOut(Shader::InOutVars* vars, const char* name) {
+template<> glm::vec4& Shader::getInOut(Shader::InOutVars* vars, StrId name) {
   auto& v = (*vars)[name];
   v.integer = false;
   return v.f4;

@@ -30,8 +30,11 @@ namespace swrast {
     virtual void Interpolate(glm::vec4& pos, Shader::InOutVars& vars) = 0;
   };
 
+  /// Struct represeting a single vertex in a primitie.
   struct Vertex {
+    /// Position of the vertex.
     glm::vec4 pos;
+    /// Variables to be interpolated.
     Shader::InOutVars vars;
   };
 

@@ -7,12 +7,13 @@
 #include "error.hpp"
 #include "state/State.h"
 #include "swrast_private.h"
+#include "utils.h"
 #include <functional>
 #include <any>
 
 namespace swrast {
   using Uniform = std::any;
-  using UniformGroup = std::unordered_map<std::string, Uniform>;
+  using UniformGroup = std::unordered_map<StrId, Uniform>;
 
   enum class ShaderType { Vertex, Fragment };
 
@@ -36,7 +37,7 @@ namespace swrast {
    */
   class Shader : public UniqueId<Shader> {
   public:
-    using InOutVars = std::unordered_map<std::string, InOutVar>;
+    using InOutVars = std::unordered_map<StrId, InOutVar>;
 
     /// Pointer to all program uniforms
     /// @note This property is assigned to when the swrast::Program is constructed with this shader.
@@ -53,14 +54,14 @@ namespace swrast {
      * @return Optinal reference to the uniform variable.
      */
     template<class T>
-    OptRef<T> Uniform(const char* name) {
+    OptRef<T> Uniform(StrId name) {
       if (uniforms->count(name) == 0)
         return {};
       return std::any_cast<T&>(uniforms->operator[](name));
     }
 
-    template<class T> inline T& In(const char* name) { return getInOut<T>(&m_in, name); }
-    template<class T> inline T& Out(const char* name) { return getInOut<T>(&m_out, name); }
+    template<class T> inline T& In(StrId name) { return getInOut<T>(&m_in, name); }
+    template<class T> inline T& Out(StrId name) { return getInOut<T>(&m_out, name); }
 
     inline InOutVars& InVars() { return m_in; }
     inline InOutVars& OutVars() { return m_out; }
@@ -72,7 +73,7 @@ namespace swrast {
     /// Shader output variables
     InOutVars m_out;
 
-    template<class T> T& getInOut(InOutVars* vars, const char* name);
+    template<class T> T& getInOut(InOutVars* vars, StrId name);
   protected:
     /**
      * @brief Construct the shader
@@ -163,7 +164,7 @@ namespace swrast {
 
     Program& Use();
 
-    inline void SetUniform(const char* name, const std::any& value) {
+    inline void SetUniform(StrId name, const std::any& value) {
       m_uniforms[name] = value;
     }
 
@@ -178,12 +179,12 @@ namespace swrast {
   template<> ObjectHandle<FragmentShader> State::CreateObject(FragmentShader&& obj);
   template<> ObjectHandle<Program> State::CreateObject(Program&& obj);
 
-  template<> int32_t& Shader::getInOut(Shader::InOutVars* vars, const char* name);
-  template<> glm::ivec2& Shader::getInOut(Shader::InOutVars* vars, const char* name);
-  template<> glm::ivec3& Shader::getInOut(Shader::InOutVars* vars, const char* name);
-  template<> glm::ivec4& Shader::getInOut(Shader::InOutVars* vars, const char* name);
-  template<> float& Shader::getInOut(Shader::InOutVars* vars, const char* name);
-  template<> glm::vec2& Shader::getInOut(Shader::InOutVars* vars, const char* name);
-  template<> glm::vec3& Shader::getInOut(Shader::InOutVars* vars, const char* name);
-  template<> glm::vec4& Shader::getInOut(Shader::InOutVars* vars, const char* name);
+  template<> int32_t& Shader::getInOut(Shader::InOutVars* vars, StrId name);
+  template<> glm::ivec2& Shader::getInOut(Shader::InOutVars* vars, StrId name);
+  template<> glm::ivec3& Shader::getInOut(Shader::InOutVars* vars, StrId name);
+  template<> glm::ivec4& Shader::getInOut(Shader::InOutVars* vars, StrId name);
+  template<> float& Shader::getInOut(Shader::InOutVars* vars, StrId name);
+  template<> glm::vec2& Shader::getInOut(Shader::InOutVars* vars, StrId name);
+  template<> glm::vec3& Shader::getInOut(Shader::InOutVars* vars, StrId name);
+  template<> glm::vec4& Shader::getInOut(Shader::InOutVars* vars, StrId name);
 } // namespace swrast

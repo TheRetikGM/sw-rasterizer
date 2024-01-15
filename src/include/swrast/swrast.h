@@ -12,4 +12,5 @@
 #include "state/Framebuffer.h"
 #include "state/Program.h"
 #include "state/ObjectHandleFromId.hpp"
+#include "utils.h"
 
