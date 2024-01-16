@@ -1,8 +1,9 @@
 /**
- * @brief Implementation of primitive-specific pipeline functions.
+ * @brief Implementation of pipeline functions for render primitives.
  * @author Jakub Kloub, xkloub03, VUT FIT
  * @file RenderPrimitive.cpp
  */
+#include "render/render.h"
 #include "render/RenderPrimitive.h"
 #include "state/Framebuffer.h"
 #include "state/Program.h"
@@ -36,7 +37,6 @@ inline bool is_ccw(const TrianglePrimitive& prim) {
   const glm::vec2 ac = glm::vec2(prim.m_Vertices[2].pos) - glm::vec2(prim.m_Vertices[0].pos);
   return ac.x * ab.y - ac.y * ab.x <= 0.0f;
 }
-
 
 void TrianglePrimitive::Clip(const PrimFunc& func)  {
   std::array<uint8_t, 3> pi = { 0, 1, 2 };
@@ -127,7 +127,6 @@ bool TrianglePrimitive::Cull() {
 
 // Implementation of Pineda's rasterization algorithm.
 void TrianglePrimitive::Rasterize(const FragFunc& func) {
-  /* Rasterize primitive using Pineda's rasterization algorithm. */
   glm::vec2 v[] = {
     glm::vec2(a),
     glm::vec2(b),

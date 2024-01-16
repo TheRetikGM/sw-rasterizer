@@ -4,7 +4,6 @@
  * @file RenderPrimitive.h
  */
 #pragma once
-#include "render.h"
 #include <array>
 #include <functional>
 #include <glm/glm.hpp>
@@ -52,6 +51,26 @@ namespace swrast {
 
     TrianglePrimitive(const std::array<Vertex, 3>& vertices);
     TrianglePrimitive() = default;
+
+    void ProcessVertex(glm::vec4& position) override;
+    void Clip(const PrimFunc& fun) override;
+    void PerpDiv() override;
+    void NdcTransform() override;
+    bool Cull() override;
+    void Rasterize(const FragFunc& func) override;
+    void Interpolate(glm::vec4& pos, Shader::InOutVars& vars) override;
+  };
+
+  class LinePrimitive : public RenderPrimitive {
+  public:
+    std::array<Vertex, 2> m_Vertices;
+    glm::vec4& a = m_Vertices[0].pos;
+    glm::vec4& b = m_Vertices[1].pos;
+    Shader::InOutVars& a_attr = m_Vertices[0].vars;
+    Shader::InOutVars& b_attr = m_Vertices[1].vars;
+
+    LinePrimitive(const std::array<Vertex, 3>& vertices);
+    LinePrimitive() = default;
 
     void ProcessVertex(glm::vec4& position) override;
     void Clip(const PrimFunc& fun) override;

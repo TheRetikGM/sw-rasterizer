@@ -8,5 +8,5 @@ proj_src += files(
   './state/Framebuffer.cpp',
   './state/Program.cpp',
   './render/render.cpp',
-  './render/TrianglePrimitive.cpp',
+  './render/RenderPrimitive.cpp',
 )
