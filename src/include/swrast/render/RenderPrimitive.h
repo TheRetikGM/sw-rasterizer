@@ -25,8 +25,17 @@ namespace swrast {
     virtual void PerpDiv() = 0;
     virtual void NdcTransform() = 0;
     virtual bool Cull() = 0;
-    virtual void Rasterize(const FragFunc& func) = 0;
+    void Rasterize(const FragFunc& func) {
+      if (State::m_WriteFrame)
+        wireframe(func);
+      else
+        rasterize(func);
+    }
     virtual void Interpolate(glm::vec4& pos, Shader::InOutVars& vars) = 0;
+  protected:
+
+    virtual void rasterize(const FragFunc& func) = 0;
+    virtual void wireframe(const FragFunc& func) = 0;
   };
 
   /// Struct represeting a single vertex in a primitie.
@@ -57,8 +66,11 @@ namespace swrast {
     void PerpDiv() override;
     void NdcTransform() override;
     bool Cull() override;
-    void Rasterize(const FragFunc& func) override;
     void Interpolate(glm::vec4& pos, Shader::InOutVars& vars) override;
+
+  protected:
+    void rasterize(const FragFunc& func) override;
+    void wireframe(const FragFunc& func) override;
   };
 
   class LinePrimitive : public RenderPrimitive {
@@ -77,8 +89,11 @@ namespace swrast {
     void PerpDiv() override;
     void NdcTransform() override;
     bool Cull() override;
-    void Rasterize(const FragFunc& func) override;
     void Interpolate(glm::vec4& pos, Shader::InOutVars& vars) override;
+
+  protected:
+    void rasterize(const FragFunc& func) override;
+    void wireframe(const FragFunc& func) override;
   };
 } // namespace swrast
 

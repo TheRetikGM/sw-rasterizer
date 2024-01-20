@@ -85,6 +85,8 @@ struct MainProgram {
       .fragment_shader = State::CreateObject(FragmentShader(fragment_shader)),
     }));
 
+    State::m_DepthTest = true;
+
     // Init opengl gpu texture used for imgui image drawing.
     glGenTextures(1, &fb_texture);
     glBindTexture(GL_TEXTURE_2D, fb_texture);
@@ -103,10 +105,8 @@ struct MainProgram {
     ImGui::SeparatorText("Info");
     fps_plot.DrawPlot();
     ImGui::SeparatorText("Controls");
-    static bool depth_test = true;
-    if (ImGui::Checkbox("Depth test", &depth_test))
-      LOG_S(strfmt("Depth test: %s", depth_test ? "on" : "off"));
-    State::SetDepthTest(depth_test);
+    if (ImGui::Checkbox("Depth test", &State::m_DepthTest))
+      LOG_S(strfmt("Depth test: %s", State::m_DepthTest ? "on" : "off"));
     static bool culling = false;
     static int cull_face_current = 2;
     if (ImGui::Checkbox("Culling", &culling))
@@ -120,6 +120,7 @@ struct MainProgram {
       State::SetCullFace(CullFace(cull_face_current));
       ImGui::Unindent();
     }
+    ImGui::Checkbox("Wireframe", &State::m_WriteFrame);
     ImGui::Separator();
     ImGui::Checkbox("Rotate cube", &rotate_cube);
     ImGui::End();

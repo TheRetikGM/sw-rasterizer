@@ -46,12 +46,17 @@ namespace swrast {
     static ObjectId m_defaultFb;
     static Opt<ObjectId> m_activeProgram;
     static Opt<ObjectId> m_activeVao;
-    static CullFace m_cullFace;
-    inline static bool m_depthTest = false;
 
     friend class RenderState;
+    friend class RenderPrimitive;
 
   public:
+    /// Which faces should be culled.
+    inline static CullFace m_CullFace = CullFace::None;
+    /// Enable/Disable depth testing.
+    inline static bool m_DepthTest = false;
+    /// Enable/Disable wireframe rendering mode.
+    inline static bool m_WriteFrame = false;
 
     /**
      * @brief Initialize the state.
@@ -61,9 +66,6 @@ namespace swrast {
 
     /// Destroy the state and all its allocated resources.
     static void Destroy();
-
-    /// Enable/disable depth testing.
-    static void SetDepthTest(bool b) { m_depthTest = b; }
 
     /// Get the currently bound framebuffer.
     static ObjectHandle<Framebuffer> GetActiveFramebuffer();
@@ -92,7 +94,7 @@ namespace swrast {
      * @brief Set how the faces should be culled.
      * @param cull Culling method to use.
      */
-    inline static void SetCullFace(CullFace cull) { m_cullFace = cull; }
+    inline static void SetCullFace(CullFace cull) { m_CullFace = cull; }
 
     /**
      * @brief Set the cufrent active program.

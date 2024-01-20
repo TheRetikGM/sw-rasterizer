@@ -27,7 +27,6 @@ ObjectId swrast::State::m_activeFb = 0;
 ObjectId swrast::State::m_defaultFb = 0;
 Opt<ObjectId> swrast::State::m_activeProgram = {};
 Opt<ObjectId> swrast::State::m_activeVao = {};
-CullFace swrast::State::m_cullFace = CullFace::None;
 
 void State::Init(glm::uvec2 fb_size) {
   // Create default framebuffer.

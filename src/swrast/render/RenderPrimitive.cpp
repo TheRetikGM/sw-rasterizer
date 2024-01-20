@@ -12,6 +12,56 @@
 
 using namespace swrast;
 
+void bresenham_line(glm::ivec2 a, glm::ivec2 b, const RenderPrimitive::FragFunc& func) {
+  glm::ivec2 u = b - a;
+  bool flip_x = false;
+  bool flip_y = false;
+
+  if (u.x < 0) {
+    u.x = -u.x;
+    a.x = -a.x;
+    b.x = -b.x;
+    flip_x = true;
+  }
+  if (u.y < 0) {
+    u.y = -u.y;
+    a.y = -a.y;
+    b.y = -b.y;
+    flip_y = true;
+  }
+
+  int x = a.x, y = a.y;
+  int e = 0.5f * (u.x - u.y);
+
+  while (x <= b.x && y <= b.y) {
+    func(glm::vec4((flip_x ? -x : x) + 0.5f, (flip_y ? -y : y) + 0.5f, 0.0f, 1.0f));
+    if (e < 0) {
+      y++;
+      e += u.x;
+    } else {
+      x++;
+      e -= u.y;
+    }
+  }
+}
+
+inline glm::vec4 simd_interp(const glm::vec4& a, const glm::vec4& b, const glm::vec4& c, const glm::vec3& p) {
+  __m128 va = _mm_loadu_ps(glm::value_ptr(a));
+  __m128 vb = _mm_loadu_ps(glm::value_ptr(b));
+  __m128 vc = _mm_loadu_ps(glm::value_ptr(c));
+
+  __m128 vpx = _mm_set_ps(p.x, p.x, p.x, p.x);
+  __m128 vpy = _mm_set_ps(p.y, p.y, p.y, p.y);
+  __m128 vpz = _mm_set_ps(p.z, p.z, p.z, p.z);
+
+  __m128 result = _mm_add_ps(_mm_add_ps(_mm_mul_ps(vpx, va), _mm_mul_ps(vpy, vb)), _mm_mul_ps(vpz, vc));
+
+  glm::vec4 v_result;
+  _mm_storeu_ps(glm::value_ptr(v_result), result);
+
+  return v_result;
+}
+
 
 TrianglePrimitive::TrianglePrimitive(const std::array<Vertex, 3>& vertices)
   : m_Vertices(vertices) {
@@ -126,12 +176,8 @@ bool TrianglePrimitive::Cull() {
 }
 
 // Implementation of Pineda's rasterization algorithm.
-void TrianglePrimitive::Rasterize(const FragFunc& func) {
-  glm::vec2 v[] = {
-    glm::vec2(a),
-    glm::vec2(b),
-    glm::vec2(c),
-  };
+void TrianglePrimitive::rasterize(const FragFunc& func) {
+  glm::vec2 v[] = { glm::vec2(a), glm::vec2(b), glm::vec2(c) };
 
   // If the vertices aren't in CCW order, then convert them to CCW.
   glm::vec2 ab = v[1] - v[0];
@@ -160,29 +206,100 @@ void TrianglePrimitive::Rasterize(const FragFunc& func) {
   for (int y = bmin.y; y < (int)bmax.y; y++) {
     float t1 = e1, t2 = e2, t3 = e3;
     for (int x = bmin.x; x < (int)bmax.x; x++) {
-      if (t1 >= 0 && t2 >= 0 && t3 >= 0)
+      if (t1 >= 0 && t2 >= 0 && t3 >= 0) {
         func(glm::vec4((float)x + 0.5f, (float)y + 0.5f, 0.0f, 1.0f));   // NOTE: Fragment depth is added in fragment_interpolate().
+      }
       t1 -= d1.y; t2 -= d2.y; t3 -= d3.y;
     }
     e1 += d1.x; e2 += d2.x; e3 += d3.x;
   }
 }
 
-inline glm::vec4 simd_interp(const glm::vec4& a, const glm::vec4& b, const glm::vec4& c, const glm::vec3& p) {
-  __m128 va = _mm_loadu_ps(glm::value_ptr(a));
-  __m128 vb = _mm_loadu_ps(glm::value_ptr(b));
-  __m128 vc = _mm_loadu_ps(glm::value_ptr(c));
+// Liang-Barsky line clipping algorithm.
+bool line_clip(glm::vec2& a, glm::vec2& b, glm::vec2 min, glm::vec2 max) {
+  const auto maxi = [](float arr[],int n) -> float {
+    float m = 0;
+    for (int i = 0; i < n; ++i)
+      if (m < arr[i])
+        m = arr[i];
+    return m;
+  };
+  const auto mini = [](float arr[], int n) -> float {
+    float m = 1;
+    for (int i = 0; i < n; ++i)
+      if (m > arr[i])
+        m = arr[i];
+    return m;
+  };
 
-  __m128 vpx = _mm_set_ps(p.x, p.x, p.x, p.x);
-  __m128 vpy = _mm_set_ps(p.y, p.y, p.y, p.y);
-  __m128 vpz = _mm_set_ps(p.z, p.z, p.z, p.z);
+  float p1 = -(b.x - a.x);
+  float p2 = -p1;
+  float p3 = -(b.y - a.y);
+  float p4 = -p3;
 
-  __m128 result = _mm_add_ps(_mm_add_ps(_mm_mul_ps(vpx, va), _mm_mul_ps(vpy, vb)), _mm_mul_ps(vpz, vc));
+  float q1 = a.x - min.x;
+  float q2 = max.x - a.x;
+  float q3 = a.y - min.y;
+  float q4 = max.y - a.y;
 
-  glm::vec4 v_result;
-  _mm_storeu_ps(glm::value_ptr(v_result), result);
+  float posarr[5], negarr[5];
+  int posind = 1, negind = 1;
+  posarr[0] = 1;
+  negarr[0] = 0;
 
-  return v_result;
+  if ((p1 == 0 && q1 < 0) || (p2 == 0 && q2 < 0) || (p3 == 0 && q3 < 0) || (p4 == 0 && q4 < 0))
+      return false;
+  if (p1 != 0) {
+    float r1 = q1 / p1;
+    float r2 = q2 / p2;
+    if (p1 < 0) {
+      negarr[negind++] = r1; // for negative p1, add it to negative array
+      posarr[posind++] = r2; // and add p2 to positive array
+    } else {
+      negarr[negind++] = r2;
+      posarr[posind++] = r1;
+    }
+  }
+  if (p3 != 0) {
+    float r3 = q3 / p3;
+    float r4 = q4 / p4;
+    if (p3 < 0) {
+      negarr[negind++] = r3;
+      posarr[posind++] = r4;
+    } else {
+      negarr[negind++] = r4;
+      posarr[posind++] = r3;
+    }
+  }
+
+  float rn1, rn2;
+  rn1 = maxi(negarr, negind); // maximum of negative array
+  rn2 = mini(posarr, posind); // minimum of positive array
+
+  if (rn1 > rn2)
+    return false;
+
+  b.x = a.x + p2 * rn2;
+  b.y = a.y + p4 * rn2;
+  a.x = a.x + p2 * rn1;
+  a.y = a.y + p4 * rn1;
+
+  return true;
+}
+
+void TrianglePrimitive::wireframe(const FragFunc& func) {
+  glm::vec2 a1 = glm::vec2(a), a2 = glm::vec2(b);
+  glm::vec2 b1 = glm::vec2(b), b2 = glm::vec2(c);
+  glm::vec2 c1 = glm::vec2(c), c2 = glm::vec2(a);
+  glm::vec2 min{ 0, 0 };
+  glm::vec2 max = State::GetActiveFramebuffer()->GetSize() - glm::uvec2(1);
+
+  if (line_clip(a1, a2, min, max))
+    bresenham_line(a1, a2, func);
+  if (line_clip(b1, b2, min, max))
+    bresenham_line(b1, b2, func);
+  if (line_clip(c1, c2, min, max))
+    bresenham_line(c1, c2, func);
 }
 
 void TrianglePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars) {
@@ -218,3 +335,15 @@ void TrianglePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars) {
   pos.z = pcl.x * a.z + pcl.y * b.z + pcl.z * c.z;
 }
 
+
+// TODO: implement this]
+LinePrimitive::LinePrimitive(const std::array<Vertex, 3>& vertices) {
+}
+void LinePrimitive::ProcessVertex(glm::vec4& position) {}
+void LinePrimitive::Clip(const PrimFunc& fun) {}
+void LinePrimitive::PerpDiv() {}
+void LinePrimitive::NdcTransform() {}
+bool LinePrimitive::Cull() {}
+void LinePrimitive::rasterize(const FragFunc& func){}
+void LinePrimitive::wireframe(const FragFunc& func){}
+void LinePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars){}

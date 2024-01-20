@@ -134,8 +134,8 @@ void RenderState::Draw(const RenderCommand& render_command) {
     .prg = ObjectHandle<Program>::FromId(State::m_activeProgram.value()),
     .vao = ObjectHandle<VertexArray>::FromId(State::m_activeVao.value()),
     .fb = ObjectHandle<Framebuffer>::FromId(State::m_activeFb),
-    .cull = State::m_cullFace,
-    .depth = State::m_depthTest,
+    .cull = State::m_CullFace,
+    .depth = State::m_DepthTest,
   };
   if (ctx.prg->GetVertexShader()->m_Attributes.size() < ctx.vao->GetAttributes().size())
     ctx.prg->GetVertexShader()->m_Attributes.resize(ctx.vao->GetAttributes().size());
