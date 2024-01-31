@@ -64,7 +64,8 @@ inline glm::vec4 simd_interp(const glm::vec4& a, const glm::vec4& b, const glm::
 
 
 TrianglePrimitive::TrianglePrimitive(const std::array<Vertex, 3>& vertices)
-  : m_Vertices(vertices) {
+  : m_prim(Primitive::Triangles)
+  , m_Vertices(vertices) {
   auto ac = c - a;
   auto ab = b - a;
   m_invArea = 1.0f / glm::abs(ac.x * ab.y - ac.y * ab.x);
@@ -73,13 +74,48 @@ TrianglePrimitive::TrianglePrimitive(const std::array<Vertex, 3>& vertices)
 void TrianglePrimitive::ProcessVertex(glm::vec4& position) {
   m_Vertices[m_currentVertex].pos = position;
   m_Vertices[m_currentVertex].vars = RenderState::ctx.prg->GetVertexShader()->OutVars();
+
   if (++m_currentVertex == 3) {
-    m_currentVertex = 0;
     auto ac = c - a;
     auto ab = b - a;
     m_invArea = 1.0f / glm::abs(ac.x * ab.y - ac.y * ab.x);
-    m_OnEmit(this);
+
+    switch (m_prim) {
+      case Primitive::TriangleStrip:
+        m_posBackup[0] = m_Vertices[1].pos;
+        m_posBackup[1] = m_Vertices[2].pos;
+
+        m_OnEmit(this);
+
+        m_Vertices[0].pos = m_posBackup[0];
+        m_Vertices[1].pos = m_posBackup[1];
+        m_Vertices[0].vars = m_Vertices[1].vars;
+        m_Vertices[1].vars = m_Vertices[2].vars;
+
+        m_currentVertex = 2;
+        m_even = !m_even;
+        break;
+      case Primitive::TriangleFan:
+        m_posBackup[0] = m_Vertices[0].pos;
+        m_posBackup[1] = m_Vertices[2].pos;
+        m_OnEmit(this);
+        m_Vertices[0].pos = m_posBackup[0];
+        m_Vertices[1].pos = m_posBackup[1];
+        m_Vertices[1].vars = m_Vertices[2].vars;
+        m_currentVertex = 2;
+        break;
+      default:
+        m_OnEmit(this);
+        m_currentVertex = 0;
+        break;
+    }
   }
+}
+
+void TrianglePrimitive::Reset() {
+  m_currentVertex = 0;
+  m_prim = Primitive::Triangles;
+  m_even = true;
 }
 
 inline bool is_ccw(const TrianglePrimitive& prim) {
@@ -178,6 +214,14 @@ bool TrianglePrimitive::Cull() {
   auto cull = RenderState::ctx.cull;
   if (cull == CullFace::None)
     return false;
+
+  // When using triangles strip, then we want to take odd CW triangles as CCW etc.
+  if (m_prim == Primitive::TriangleStrip) {
+    if (cull == CullFace::CCW)
+      return m_even == is_ccw(*this);
+    return m_even ^ is_ccw(*this);
+  }
+
   if (cull == CullFace::CCW)
     return is_ccw(*this);
   return !is_ccw(*this);
@@ -355,10 +399,12 @@ LinePrimitive::LinePrimitive(const std::array<Vertex, 2>& vertices)
 {
   m_ab = (glm::vec2)b - (glm::vec2)a;
 }
+
 void LinePrimitive::SetPrimitive(Primitive prim) {
   assert((uint8_t)prim >= 0x20 && (uint8_t)prim <= 0x22);
   m_prim = prim;
 }
+
 void LinePrimitive::ProcessVertex(glm::vec4& position) {
   m_Vertices[m_currentVertex].pos = position;
   m_Vertices[m_currentVertex].vars = RenderState::ctx.prg->GetVertexShader()->OutVars();
@@ -369,6 +415,12 @@ void LinePrimitive::ProcessVertex(glm::vec4& position) {
     m_OnEmit(this);
   }
 }
+
+void LinePrimitive::Reset() {
+  m_currentVertex = 0;
+  m_prim = Primitive::Lines;
+}
+
 void LinePrimitive::Clip(const PrimFunc& func) {
   unsigned sit = 0;
   sit |= uint8_t(a.z < -a.w) << 1;

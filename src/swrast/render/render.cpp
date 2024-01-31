@@ -113,18 +113,21 @@ void process_primitive(RenderPrimitive* prim) {
 RenderPrimitive* new_primitive(const RenderContext& ctx) {
   static auto tprim = TrianglePrimitive();
   static auto lprim = LinePrimitive();
+  tprim.Reset();
+  lprim.Reset();
 
   switch (ctx.cmd.draw_primitive) {
   case Primitive::Points:
   case Primitive::LineStrip:
   case Primitive::LineLoop:
   case Primitive::Polygon:
-  case Primitive::TriangleStrip:
-  case Primitive::TriangleFan:
     RAISEn(NotImplementedException);
   case Primitive::Lines:
     return &lprim;
+  case Primitive::TriangleStrip:
+  case Primitive::TriangleFan:
   case Primitive::Triangles:
+    tprim.SetPrimitive(ctx.cmd.draw_primitive);
     return &tprim;
   }
   throw std::invalid_argument("new_primitive: Invalid draw primitive");

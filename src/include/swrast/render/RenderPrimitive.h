@@ -33,6 +33,18 @@ namespace swrast {
         rasterize(func);
     }
     virtual void Interpolate(glm::vec4& pos, Shader::InOutVars& vars) = 0;
+
+    /**
+     * @brief Set specific primitive.
+     *
+     * This function is used to further specify what kind of primitive is this and how should the
+     * primitives be emitted based on that. For example for TrianglePrimitive there are primitives
+     * such as TriangleStrip and TriangleFan.
+     * @param prim Primitive to set.
+     */
+    virtual void SetPrimitive(Primitive prim) = 0;
+    /// Reset the vertex emitting state.
+    virtual void Reset() {};
   protected:
 
     virtual void rasterize(const FragFunc& func) = 0;
@@ -50,6 +62,10 @@ namespace swrast {
   class TrianglePrimitive : public RenderPrimitive {
     float m_invArea;
     unsigned m_currentVertex = 0;
+    Primitive m_prim;
+    std::array<glm::vec4, 2> m_posBackup;
+    bool m_even = true;
+
   public:
     std::array<Vertex, 3> m_Vertices;
     glm::vec4& a = m_Vertices[0].pos;
@@ -68,6 +84,8 @@ namespace swrast {
     void NdcTransform() override;
     bool Cull() override;
     void Interpolate(glm::vec4& pos, Shader::InOutVars& vars) override;
+    void SetPrimitive(Primitive prim) override;
+    void Reset() override;
 
   protected:
     void rasterize(const FragFunc& func) override;
@@ -96,6 +114,8 @@ namespace swrast {
     void NdcTransform() override;
     bool Cull() override;
     void Interpolate(glm::vec4& pos, Shader::InOutVars& vars) override;
+    void SetPrimitive(Primitive prim) override;
+    void Reset() override;
 
   protected:
     void rasterize(const FragFunc& func) override;

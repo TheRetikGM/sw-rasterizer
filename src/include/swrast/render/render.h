@@ -16,9 +16,17 @@ namespace swrast {
 
   /// Represents the different rendering modes.
   enum class Primitive : uint8_t {
-    Points, Lines, LineStrip, LineLoop,
-    Polygon, Triangles, TriangleStrip,
-    TriangleFan,
+    Points = 0x10,
+
+    Lines = 0x20,
+    LineStrip = 0x21,
+    LineLoop = 0x22,
+
+    Polygon = 0x30,
+
+    Triangles = 0x40,
+    TriangleStrip = 0x41,
+    TriangleFan = 0x42,
   };
 
   struct RenderCommand {

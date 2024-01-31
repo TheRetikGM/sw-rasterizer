@@ -18,7 +18,10 @@ void vertex_shader(VertexShader* vs) {
   auto mvp = vs->Uniform<glm::mat4>("mvp"_sid).value().get();
 
   color = aColor;
+  if (color == glm::vec3{ 0, 0, 1 })
+    int a = 0;
   vs->m_Position = mvp * glm::vec4(aPos, 1.0f);
+  int b = 0;
 }
 
 void fragment_shader(FragmentShader* fs) {
@@ -56,15 +59,22 @@ struct MainProgram {
   void OnCreate() {
     State::Init(vp_size);
     VertexBuffer::Data vbo_data = {
-      -0.5f,  0.5f,  0.5f,    0.0f, 0.0f, 0.0f,
-       0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 0.0f,
-      -0.5f, -0.5f,  0.5f,    0.0f, 1.0f, 0.0f,
-       0.5f, -0.5f,  0.5f,    0.0f, 0.0f, 1.0f,
+      // -0.5f,  0.5f,  0.5f,    0.0f, 0.0f, 0.0f,
+      //  0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 0.0f,
+      // -0.5f, -0.5f,  0.5f,    0.0f, 1.0f, 0.0f,
+      //  0.5f, -0.5f,  0.5f,    0.0f, 0.0f, 1.0f,
+      //
+      // -0.5f,  0.5f, -0.5f,    1.0f, 1.0f, 0.0f,
+      //  0.5f,  0.5f, -0.5f,    1.0f, 0.0f, 1.0f,
+      // -0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 1.0f,
+      //  0.5f, -0.5f, -0.5f,    1.0f, 1.0f, 1.0f,
 
-      -0.5f,  0.5f, -0.5f,    1.0f, 1.0f, 0.0f,
-       0.5f,  0.5f, -0.5f,    1.0f, 0.0f, 1.0f,
-      -0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 1.0f,
-       0.5f, -0.5f, -0.5f,    1.0f, 1.0f, 1.0f,
+      -0.5f,  0.5f, 0.0f,   0.0f, 1.0f, 0.0f,
+      -0.5f, -0.5f, 0.0f,   1.0f, 0.0f, 0.0f,
+       0.0f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,
+       0.5f, -0.5f, 0.0f,   1.0f, 0.0f, 1.0f,
+       0.5f,  0.0f, 0.0f,   0.0f, 1.0f, 1.0f,
+       0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,
     };
     auto vbo = State::CreateObject(VertexBuffer(std::move(vbo_data)));
     auto ibo = State::CreateObject(IndexBuffer({    // Cube
@@ -78,7 +88,7 @@ struct MainProgram {
     vao = State::CreateObject(VertexArray({
       { vbo, AttributeType::Vec3, 6 * sizeof(float), 0 },
       { vbo, AttributeType::Vec3, 6 * sizeof(float), 3 * sizeof(float) },
-    }, ibo));
+    }, {}));
     fb = State::CreateObject(Framebuffer::CreateBasic(vp_size));
 
     prg = State::CreateObject(Program({
@@ -177,9 +187,12 @@ struct MainProgram {
     State::Clear(Colors::Gray);
     prg->Use();
 
-    prg->SetUniform("mvp"_sid, mvp);
+    prg->SetUniform("mvp"_sid, glm::mat4(1.0f));
+    State::m_DepthTest = false;
+    // State::m_WriteFrame = true;
     vao->Use();
-    State::DrawIndexed(Primitive::Triangles, vao->GetIndexBuffer()->data.size());
+    // State::DrawIndexed(Primitive::Triangles, vao->GetIndexBuffer()->data.size());
+    State::DrawArrays(Primitive::TriangleFan, 0, 6);
 
     // prg->SetUniform("mvp"_sid, projection * camera.m_ViewMatrix);
     // axis_vao->Use();
