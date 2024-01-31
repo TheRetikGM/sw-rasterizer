@@ -11,6 +11,7 @@
 
 namespace swrast {
   struct InOutVar;
+
   class RenderPrimitive {
   public:
     using PrimFunc = std::function<void(RenderPrimitive*)>;
@@ -74,6 +75,11 @@ namespace swrast {
   };
 
   class LinePrimitive : public RenderPrimitive {
+    /// Current processed vertex. This is used during ProcessVertex.
+    unsigned m_currentVertex = 0;
+    /// Vector from a to b used during interpolation.
+    glm::vec2 m_ab;
+    Primitive m_prim;
   public:
     std::array<Vertex, 2> m_Vertices;
     glm::vec4& a = m_Vertices[0].pos;
@@ -81,7 +87,7 @@ namespace swrast {
     Shader::InOutVars& a_attr = m_Vertices[0].vars;
     Shader::InOutVars& b_attr = m_Vertices[1].vars;
 
-    LinePrimitive(const std::array<Vertex, 3>& vertices);
+    LinePrimitive(const std::array<Vertex, 2>& vertices);
     LinePrimitive() = default;
 
     void ProcessVertex(glm::vec4& position) override;

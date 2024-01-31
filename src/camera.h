@@ -17,16 +17,13 @@ class Camera {
   float m_hRot = 1.5f * PI;
   float m_vRot = 0.5f * PI;
 
-  float m_hRotSin = 0.0f;
-  float m_hRotCos = 0.0f;
-  float m_vRotSin = 0.0f;
-  float m_vRotCos = 0.0f;
 public:
   glm::mat4 m_ViewMatrix{ 0.0f };
 
   Camera();
 
   void Update(float dt);
+  void Reset();
 private:
   void handleInput(float dt);
 };

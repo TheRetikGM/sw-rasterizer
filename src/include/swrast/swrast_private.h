@@ -25,9 +25,10 @@ namespace swrast {
    */
   template<class T>
   class UniqueId {
+    inline static ObjectId id = 0;
   public:
-    inline static ObjectId Id = 0;
-    UniqueId() { Id++; }
+    ObjectId Id;
+    UniqueId() { Id = id++; }
 
     // Operator overloads used for STL containers.
     bool operator==(const UniqueId<T>& rhs) const { return Id == rhs.Id; }

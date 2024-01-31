@@ -150,9 +150,17 @@ void TrianglePrimitive::Clip(const PrimFunc& func)  {
 }
 
 void TrianglePrimitive::PerpDiv() {
-  a /= a.w;
-  b /= b.w;
-  c /= c.w;
+  a.x /= a.w;
+  a.y /= a.w;
+  a.z /= a.w;
+
+  b.x /= b.w;
+  b.y /= b.w;
+  b.z /= b.w;
+
+  c.x /= c.w;
+  c.y /= c.w;
+  c.z /= c.w;
 }
 
 void TrianglePrimitive::NdcTransform() {
@@ -335,15 +343,114 @@ void TrianglePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars) {
   pos.z = pcl.x * a.z + pcl.y * b.z + pcl.z * c.z;
 }
 
-
-// TODO: implement this]
-LinePrimitive::LinePrimitive(const std::array<Vertex, 3>& vertices) {
+void TrianglePrimitive::SetPrimitive(Primitive prim) {
+  assert((uint8_t)prim >= 0x40 && (uint8_t)prim <= 0x42);
+  m_prim = prim;
 }
-void LinePrimitive::ProcessVertex(glm::vec4& position) {}
-void LinePrimitive::Clip(const PrimFunc& fun) {}
-void LinePrimitive::PerpDiv() {}
-void LinePrimitive::NdcTransform() {}
-bool LinePrimitive::Cull() {}
-void LinePrimitive::rasterize(const FragFunc& func){}
-void LinePrimitive::wireframe(const FragFunc& func){}
-void LinePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars){}
+
+
+LinePrimitive::LinePrimitive(const std::array<Vertex, 2>& vertices)
+  : m_prim(Primitive::Lines)
+  , m_Vertices(vertices)
+{
+  m_ab = (glm::vec2)b - (glm::vec2)a;
+}
+void LinePrimitive::SetPrimitive(Primitive prim) {
+  assert((uint8_t)prim >= 0x20 && (uint8_t)prim <= 0x22);
+  m_prim = prim;
+}
+void LinePrimitive::ProcessVertex(glm::vec4& position) {
+  m_Vertices[m_currentVertex].pos = position;
+  m_Vertices[m_currentVertex].vars = RenderState::ctx.prg->GetVertexShader()->OutVars();
+  m_currentVertex++;
+  if (m_currentVertex == 2) {
+    m_currentVertex = 0;
+    m_ab = (glm::vec2)b - (glm::vec2)a;
+    m_OnEmit(this);
+  }
+}
+void LinePrimitive::Clip(const PrimFunc& func) {
+  unsigned sit = 0;
+  sit |= uint8_t(a.z < -a.w) << 1;
+  sit |= uint8_t(b.z < -b.w) << 0;
+
+  auto pa = 0;
+  auto pb = 1;
+
+  if (sit == 0b11)  // All vertices in front of near plane.
+    return;
+  if (sit == 0b00) {   // All vertices beind the near plane.
+    func(this);
+    return;
+  }
+  if (sit == 0b01)
+    std::swap(pa, pb);
+
+  auto& a = m_Vertices[pa];
+  auto& b = m_Vertices[pb];
+
+  // Cut the line with near plane.
+  glm::vec4 u = (b.pos / b.pos.w) - (a.pos / a.pos.w);
+  float t = (-a.pos.w - a.pos.z) / u.z;
+  a.pos.x += u.x * t;
+  a.pos.y += u.y * t;
+  a.pos.z = -a.pos.w;
+
+  // Interpolate attributes
+  for (auto& [name, var] : a.vars) {
+    if (!var.integer)
+      var.f4 = (1 - t) * var.f4 + t * b.vars[name].f4;
+  }
+
+  func(this);
+}
+void LinePrimitive::PerpDiv() {
+  a.x /= a.w;
+  a.y /= a.w;
+  a.z /= a.w;
+
+  b.x /= b.w;
+  b.y /= b.w;
+  b.z /= b.w;
+}
+
+void LinePrimitive::NdcTransform() {
+  a.x = (a.x + 1) * RenderState::ctx.fb->GetSize().x * 0.5f;
+  a.y = (a.y + 1) * RenderState::ctx.fb->GetSize().y * 0.5f;
+
+  b.x = (b.x + 1) * RenderState::ctx.fb->GetSize().x * 0.5f;
+  b.y = (b.y + 1) * RenderState::ctx.fb->GetSize().y * 0.5f;
+}
+bool LinePrimitive::Cull() { return false; }
+
+void LinePrimitive::rasterize(const FragFunc& func) {
+  if (line_clip((glm::vec2&)a, (glm::vec2&)b, glm::vec2(0), glm::vec2(State::GetActiveFramebuffer()->GetSize() - glm::uvec2(1))))
+    bresenham_line(glm::ivec2(glm::round(a)), glm::ivec2(glm::round(b)), func);
+}
+
+void LinePrimitive::wireframe(const FragFunc& func) { rasterize(func); }
+
+void LinePrimitive::Interpolate(glm::vec4& pos, Shader::InOutVars& vars) {
+  auto ab = b - a;
+  float lb = (-ab.y * (pos.y - a.y) - ab.x * (pos.x - a.x))
+           / (-(ab.x * ab.x + ab.y * ab.y));
+  float la = 1.0f - lb;
+
+  // Perspectively correct lambdas.
+  float k = (la / a.w + lb / b.w);
+  glm::vec2 pcl = { la / (a.w * k), lb / (b.w * k) };
+
+  // Interpolate attributes.
+  auto ait = a_attr.begin();
+  auto bit = b_attr.begin();
+  for (; ait != a_attr.end(); ait++, bit++) {
+    if(ait->second.integer)
+      vars[ait->first].i4 = ait->second.i4;
+    else
+      vars[ait->first].f4 = ait->second.f4 * pcl.x + bit->second.f4 * pcl.y;
+  }
+
+  // Interpolate depth
+  pos.z = pcl.x * a.z + pcl.y * b.z;
+}
+

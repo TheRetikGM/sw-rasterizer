@@ -18,13 +18,13 @@ void Camera::handleInput(float dt) {
     m_hRot += mouse_delta.x * m_rotSpeed;
     m_vRot += mouse_delta.y * m_rotSpeed;
     m_vRot = glm::clamp(m_vRot, PI / 16.0f, PI - PI / 16.0f);
-    m_hRotSin = glm::sin(m_hRot);
-    m_hRotCos = glm::cos(m_hRot);
-    m_vRotSin = glm::sin(m_vRot);
-    m_vRotCos = glm::cos(m_vRot);
-    m_front.x = m_hRotCos * m_vRotSin;
-    m_front.z = m_hRotSin * m_vRotSin;
-    m_front.y = m_vRotCos;
+    float h_rot_sin = glm::sin(m_hRot);
+    float h_rot_cos = glm::cos(m_hRot);
+    float v_rot_sin = glm::sin(m_vRot);
+    float v_rot_cos = glm::cos(m_vRot);
+    m_front.x = h_rot_cos * v_rot_sin;
+    m_front.z = h_rot_sin * v_rot_sin;
+    m_front.y = v_rot_cos;
   }
 
   // Compute right vector
@@ -52,5 +52,15 @@ void Camera::handleInput(float dt) {
 
 void Camera::Update(float dt) {
   handleInput(dt);
+  m_ViewMatrix = glm::lookAt(m_pos, m_pos + m_front, UP);
+}
+
+void Camera::Reset() {
+  m_front = { 0, 0, -1 };
+  m_pos = { 0, 0, 5 };
+  m_moveSpeed = 2.0f;
+  m_rotSpeed = 0.005f;
+  m_hRot = 1.5f * PI;
+  m_vRot = 0.5f * PI;
   m_ViewMatrix = glm::lookAt(m_pos, m_pos + m_front, UP);
 }

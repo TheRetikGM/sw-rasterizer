@@ -64,12 +64,12 @@ void assemble_vertex_attributes(const RenderContext& ctx, ObjectHandle<VertexSha
 
 void pfo(FragmentShader* fs) {
   auto fb = RenderState::ctx.fb;
-  auto tex_idx = glm::uvec2(fs->m_FragCoord);
+  auto tex_pos = glm::uvec2(fs->m_FragCoord);
 
   // Depth test
   auto depth_buffer = fb->GetDepthBuffer();
   if (RenderState::ctx.depth && depth_buffer.has_value()) {
-    float* depth = (float*)(depth_buffer->Get().GetPixel(tex_idx));
+    float* depth = (float*)(depth_buffer->Get().GetPixel(tex_pos));
     if (fs->m_FragCoord.z >= *depth)
       return;
 
@@ -80,7 +80,7 @@ void pfo(FragmentShader* fs) {
   // Write into color buffer
   auto col_buf = fb->GetColorAttach(0);
   if (col_buf.has_value()) {
-    uint8_t* pixel = col_buf->Get().GetPixel(tex_idx);
+    uint8_t* pixel = col_buf->Get().GetPixel(tex_pos);
     glm::vec<4, uint8_t> col = fs->m_FragColor * glm::vec4(255);
     std::memcpy(pixel, &col, channel_count(col_buf->Get().m_IntFormat));
   }
@@ -112,16 +112,18 @@ void process_primitive(RenderPrimitive* prim) {
 
 RenderPrimitive* new_primitive(const RenderContext& ctx) {
   static auto tprim = TrianglePrimitive();
+  static auto lprim = LinePrimitive();
 
   switch (ctx.cmd.draw_primitive) {
   case Primitive::Points:
-  case Primitive::Lines:
   case Primitive::LineStrip:
   case Primitive::LineLoop:
   case Primitive::Polygon:
   case Primitive::TriangleStrip:
   case Primitive::TriangleFan:
     RAISEn(NotImplementedException);
+  case Primitive::Lines:
+    return &lprim;
   case Primitive::Triangles:
     return &tprim;
   }

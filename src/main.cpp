@@ -29,6 +29,7 @@ void fragment_shader(FragmentShader* fs) {
 
 struct MainProgram {
   ObjectHandle<VertexArray> vao;
+  ObjectHandle<VertexArray> axis_vao;
   ObjectHandle<Framebuffer> fb;
   ObjectHandle<Program> prg;
   glm::uvec2 vp_size = { 400, 400 };
@@ -85,6 +86,23 @@ struct MainProgram {
       .fragment_shader = State::CreateObject(FragmentShader(fragment_shader)),
     }));
 
+    // Setup axis lines
+    auto axis_lines_vbo = State::CreateObject(VertexBuffer({
+      0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+      10.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+
+      0.0f, 0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+      0.0f, 10.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+
+      0.0f, 0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 10.0f, 0.0f, 0.0f, 1.0f,
+    }));
+
+    axis_vao = State::CreateObject(VertexArray({
+      { axis_lines_vbo, AttributeType::Vec3, 6 * sizeof(float), 0 },
+      { axis_lines_vbo, AttributeType::Vec3, 6 * sizeof(float), 3 * sizeof(float) },
+    }));
+
     State::m_DepthTest = true;
 
     // Init opengl gpu texture used for imgui image drawing.
@@ -123,6 +141,8 @@ struct MainProgram {
     ImGui::Checkbox("Wireframe", &State::m_WriteFrame);
     ImGui::Separator();
     ImGui::Checkbox("Rotate cube", &rotate_cube);
+    if (ImGui::Button("Reset camera"))
+      camera.Reset();
     ImGui::End();
   }
 
@@ -156,9 +176,14 @@ struct MainProgram {
     fb->Use();
     State::Clear(Colors::Gray);
     prg->Use();
+
     prg->SetUniform("mvp"_sid, mvp);
     vao->Use();
     State::DrawIndexed(Primitive::Triangles, vao->GetIndexBuffer()->data.size());
+
+    // prg->SetUniform("mvp"_sid, projection * camera.m_ViewMatrix);
+    // axis_vao->Use();
+    // State::DrawArrays(Primitive::Lines, 0, 6);
 
     // Copy data from rendered framebuffer and display it in ImGui window.
     ImGui::Begin("Rasterized image");
